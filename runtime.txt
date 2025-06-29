@@ -1,5 +1,1 @@
-flask==3.1.1
-tensorflow==2.15.0       # or tensorflow-cpu==2.15.0
-opencv-python
-numpy
-werkzeug
+python-3.10.13
