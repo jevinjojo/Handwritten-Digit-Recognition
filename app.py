@@ -15,7 +15,7 @@ app.secret_key = 'supersecretkey'
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Load the pre-trained model
+# Load the pre-trained model to faster 
 model = tf.keras.models.load_model('handwritten.keras')
 
 def allowed_file(filename):
