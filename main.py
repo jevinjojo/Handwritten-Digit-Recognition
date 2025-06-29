@@ -21,7 +21,7 @@ import tensorflow as tf
 
 # model.fit(x_train, y_train, epochs=3) 
 
-# model.save('handwritten.keras');
+# model.save('handwritten.keras')
 
 model = tf.keras.models.load_model('handwritten.keras') 
 
