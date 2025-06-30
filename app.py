@@ -2,8 +2,13 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 import numpy as np
-import tensorflow as tf
 import cv2
+try:
+    from tflite_runtime.interpreter import Interpreter
+    USE_TFLITE = True
+except ImportError:
+    import tensorflow as tf
+    USE_TFLITE = False
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
@@ -15,8 +20,14 @@ app.secret_key = 'supersecretkey'
 # Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Load the pre-trained model
-model = tf.keras.models.load_model('handwritten.keras')
+# Load the model (prefer TFLite for deployment)
+if USE_TFLITE:
+    interpreter = Interpreter(model_path='handwritten.tflite')
+    interpreter.allocate_tensors()
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+else:
+    model = tf.keras.models.load_model('handwritten.keras')
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -27,8 +38,19 @@ def preprocess_image(filepath):
     img = cv2.resize(img, (28, 28))
     img = 255 - img  # invert colors as in your script
     img = img / 255.0
-    img = img.reshape(1, 28, 28)
+    img = img.reshape(1, 28, 28, 1)
     return img
+
+
+def predict_digit(img):
+    if USE_TFLITE:
+        interpreter.set_tensor(input_details[0]['index'], img.astype(np.float32))
+        interpreter.invoke()
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+        return int(np.argmax(output_data))
+    else:
+        prediction = model.predict(img)
+        return int(np.argmax(prediction))
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -48,8 +70,7 @@ def index():
             # Preprocess and predict
             try:
                 img = preprocess_image(filepath)
-                prediction = model.predict(img)
-                digit = np.argmax(prediction)
+                digit = predict_digit(img)
                 return render_template('index.html', filename=filename, prediction=digit)
             except Exception as e:
                 flash(f'Error processing image: {e}')

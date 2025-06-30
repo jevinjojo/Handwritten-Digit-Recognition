@@ -1,5 +1,6 @@
 flask
-tensorflow
-opencv-python
+opencv-python-headless
 numpy
 werkzeug
+tflite-runtime ; sys_platform != "win32"
+tensorflow ; sys_platform == "win32"
